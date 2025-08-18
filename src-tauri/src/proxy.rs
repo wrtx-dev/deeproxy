@@ -40,7 +40,7 @@ pub struct Config {
     addr: String,
     port: i32,
     apikey: String,
-    apiAddr: String,
+    api_addr: String,
     model: String,
     skills: Vec<String>,
 }
@@ -161,7 +161,7 @@ async fn post_chat_completions(
         HeaderValue::from_str(format!("Bearer {}", ctx.conf.apikey).as_str()).unwrap(),
     );
     let dst_uri =
-        Uri::try_from(format!("{}/v1/chat/completions", ctx.conf.apiAddr.clone())).unwrap();
+        Uri::try_from(format!("{}/v1/chat/completions", ctx.conf.api_addr.clone())).unwrap();
     println!("dst host:{}", dst_uri.host().unwrap());
     req.headers_mut().remove("Host");
     req.headers_mut().append(

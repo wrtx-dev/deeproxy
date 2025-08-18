@@ -22,7 +22,7 @@ function isValidIpAddress(ip: string): boolean {
 type Config = {
   addr: string;
   port: number;
-  apiAddr: string;
+  api_addr: string;
   apikey: string;
   model: string;
   models: string[];
@@ -33,7 +33,7 @@ type ConnectStatus = "disconnected" | "connecting" | "connected";
 
 
 function App() {
-  const [port, setPort] = useState(11484);
+  const [port, setPort] = useState(11434);
   const [addr, setAddr] = useState("localhost");
   const [apiAddr, setApiAddr] = useState("https://api.deepseek.com");
   const [apikey, setApikey] = useState("");
@@ -49,7 +49,7 @@ function App() {
       setAddr(config.addr);
       setPort(config.port);
       setApikey(config.apikey);
-      setApiAddr(config.apiAddr);
+      setApiAddr(config.api_addr);
       setModel(config.model);
       setSkills(config.skills);
     })();
@@ -253,7 +253,7 @@ function App() {
             const config: Config = {
               addr: addr,
               port: port,
-              apiAddr: apiAddr,
+              api_addr: apiAddr,
               apikey: apikey,
               model: model,
               models: models,
