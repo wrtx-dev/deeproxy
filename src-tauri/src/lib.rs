@@ -105,7 +105,11 @@ pub fn run() {
                         let handle = tray.app_handle();
                         let win = handle.get_webview_window("main").unwrap();
                         if win.is_visible().unwrap() {
-                            win.hide().unwrap();
+                            if (win.is_focused().unwrap()) {
+                                win.hide().unwrap();
+                            } else {
+                                win.set_focus().unwrap();
+                            }
                         } else {
                             win.show().expect("failed to show window");
                             let _ = win.set_focus().expect("failed to set focus");

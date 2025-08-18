@@ -46,49 +46,53 @@ function App() {
     (async () => {
       const store = await Store.load("config.json");
       const config = await store.get("config") as Config;
-      setAddr(config.addr);
-      setPort(config.port);
-      setApikey(config.apikey);
-      setApiAddr(config.api_addr);
-      setModel(config.model);
-      setSkills(config.skills);
+      setAddr(config.addr || "localhost");
+      setPort(config.port || 11434);
+      setApikey(config.apikey || "");
+      setApiAddr(config.api_addr || "https://api.deepseek.com");
+      setModel(config.model || "");
+      setSkills(config.skills || []);
     })();
   }, []);
 
   useEffect(() => {
     listen<ConnectStatus>("connect_status", (event) => {
-      console.log("connect_status", event.payload);
       setConnectStatus(event.payload);
     })
-  }, [])
+  }, []);
 
   useEffect(() => {
-    const query = async () => {
-      if (apiAddr.length > 0 && apikey.length > 0) {
-        const res = await fetch(`${apiAddr}/v1/models`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apikey}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const m: string[] = [];
-          data.data.map((item: any) => {
-            m.push(item.id);
-          });
-          if (m.length > 0) {
-            setModels(m);
-            console.log("m:", m);
+    if (apiAddr && apiAddr.length > 0 && apikey.length > 0) {
+      const query = async () => {
+        if (apiAddr && apiAddr.length > 0 && apikey.length > 0) {
+          try {
+            const res = await fetch(`${apiAddr}/v1/models`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apikey}`
+              }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const m: string[] = [];
+              data.data.map((item: any) => {
+                m.push(item.id);
+              });
+              if (m.length > 0) {
+                setModels(m);
+              }
+            } else {
+              console.error("API请求失败:", res.status, res.statusText);
+            }
+          } catch (error) {
+            console.error("获取模型列表失败:", error);
           }
         }
-      }
-    };
-    if (apiAddr.length > 0 && apikey.length > 0) {
+      };
       query();
     }
-  }, [apiAddr, apikey])
+  }, [apiAddr, apikey]);
 
   return (
     <main className={"w-screen h-screen overflow-hidden flex flex-col items-start justify-start gap-2 px-3 pt-1 pb-3 font-semibold text-sm text-center bg-neutral-200/35"}>
@@ -137,8 +141,10 @@ function App() {
             type={"password"}
             onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
               const target = e.target as HTMLInputElement;
-              console.log(target.value);
-              setApikey(target.value)
+
+              requestAnimationFrame(() => {
+                setApikey(target.value);
+              });
             }}
           />
         </div>
@@ -151,7 +157,6 @@ function App() {
             value={apiAddr}
             onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
               const target = e.target as HTMLInputElement;
-              console.log(target.value);
               setApiAddr(target.value)
             }}
           />
@@ -162,7 +167,6 @@ function App() {
             className={"select select-xs col-span-6 focus-within:outline-0 p-1"}
             onChange={(e: JSX.TargetedEvent<HTMLSelectElement, Event>) => {
               const target = e.target as HTMLSelectElement;
-              console.log(target.value);
               setModel(target.value);
             }}
             value={model.length === 0 ? "chooseModel" : model}
@@ -249,7 +253,6 @@ function App() {
         <button
           className={"btn btn-xs btn-primary select-none cursor-default"}
           onClick={() => {
-            console.log(addr, port);
             const config: Config = {
               addr: addr,
               port: port,
@@ -271,7 +274,7 @@ function App() {
               }
             })();
           }}
-          disabled={addr.length === 0 || port < 1 || port > 65535 || !isValidIpAddress(addr) || !apiAddr.length}
+          disabled={addr.length === 0 || port < 1 || port > 65535 || !isValidIpAddress(addr) || apiAddr.length === 0 || apikey.length === 0}
         >
           {`保存并${connectStatus === "disconnected" ? "启动" : "重启"}`}
         </button>
