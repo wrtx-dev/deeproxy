@@ -108,9 +108,7 @@ pub fn run() {
                             let _ = win.set_focus().expect("failed to set focus");
                         }
                     }
-                    _ => {
-                        println!("unhandled event {event:?}");
-                    }
+                    _ => {}
                 })
                 .build(app)?;
 
