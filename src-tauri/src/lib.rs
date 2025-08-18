@@ -105,7 +105,7 @@ pub fn run() {
                         let handle = tray.app_handle();
                         let win = handle.get_webview_window("main").unwrap();
                         if win.is_visible().unwrap() {
-                            if (win.is_focused().unwrap()) {
+                            if win.is_focused().unwrap() {
                                 win.hide().unwrap();
                             } else {
                                 win.set_focus().unwrap();
@@ -122,12 +122,12 @@ pub fn run() {
             macos::set_activation_policy(macos::ActivationPolicy::Accessory);
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("deeproxy")
-                .hidden_title(true)
                 .resizable(false)
                 .visible(false)
                 .inner_size(400.0, 375.0);
-            // #[cfg(target_os = "macos")]
-            // let win_builder = win_builder.title_bar_style(TitleBarStyle::Overlay);
+            #[cfg(target_os = "macos")]
+            let win_builder = win_builder.hidden_title(true);
+
             let _window = win_builder.build().unwrap();
             let napp = app.handle().clone();
             tauri::async_runtime::spawn(async move {
