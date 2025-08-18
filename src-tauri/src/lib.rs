@@ -7,6 +7,9 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 mod proxy;
 
+#[cfg(target_os = "macos")]
+mod macos;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -43,8 +46,8 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let stop_item = MenuItem::with_id(app, "stop", "停止", true, None::<&str>)?;
             let start_item = MenuItem::with_id(app, "start", "启动", true, None::<&str>)?;
-            let main_item = MenuItem::with_id(app, "main", "主界面", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit_item, &stop_item, &start_item, &main_item])?;
+            let main_item = MenuItem::with_id(app, "main", "设置", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&main_item, &start_item, &stop_item, &quit_item])?;
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
@@ -111,7 +114,8 @@ pub fn run() {
                     _ => {}
                 })
                 .build(app)?;
-
+            #[cfg(target_os = "macos")]
+            macos::set_activation_policy(macos::ActivationPolicy::Accessory);
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("deeproxy")
                 .hidden_title(true)

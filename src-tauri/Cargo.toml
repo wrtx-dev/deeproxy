@@ -28,6 +28,10 @@ axum = "0.8.4"
 hyper = {version = "1.6.0", features = ["full"] }
 hyper-util = {version = "0.1.16", features= ["full"] }
 hyper-tls = "0.6.0"
+cocoa = "0.26.1"
+objc = "0.2.7"
+objc2 = "0.6.2"
+objc2-app-kit = "0.3.1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
