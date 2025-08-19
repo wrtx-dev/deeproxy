@@ -4,6 +4,7 @@ import "./global.css";
 import { invoke } from '@tauri-apps/api/core';
 import { Store } from "@tauri-apps/plugin-store";
 import { listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 function isValidIpAddress(ip: string): boolean {
   const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
@@ -100,7 +101,7 @@ function App() {
     <main className={"w-screen h-screen overflow-hidden flex flex-col items-start justify-start gap-2 px-3 pt-1 pb-3 font-semibold text-sm text-center bg-neutral-200/35"}>
       {/* <div className={"h-10 w-full border-b border-transparent shadow-2xl"} data-tauri-drag-region /> */}
       <div className="hero bg-base-200 h-20 bg-gradient-to-br from-10% to-95% from-sky-500/80 via-60% via-purple-400/50 to-lime-500/95 rounded-sm">
-        <div className="hero-content text-center text-gray-100/80 select-none cursor-default rounded-sm">
+        <div className="hero-content text-center text-gray-100/80 select-none cursor-default rounded-sm overflow-hidden">
           <div className="w-full">
             <h1 className="text-5xl font-semibold font-mono font-stretch-expanded text-white text-shadow-lg text-shadow-black/50">
               DEEPROXY
@@ -256,6 +257,7 @@ function App() {
               invoke("stop");
             })();
           }}
+          disabled={connectStatus === "disconnected"}
         >
           停止
         </button>
@@ -315,11 +317,14 @@ function App() {
           {connectStatus === "disconnected" ? "未启动" : connectStatus === "connecting" ? "启动中" : "已启动"}
         </div>
         <dialog className={"modal"} ref={aboutRef}>
-          <div className={"modal-box p-3"}>
-            <h3 className={"font-semibold"}>关于Deeproxy</h3>
-            <a className={"font-mono text-xs"} href="https://github.com/wrtx-dev/deeproxy">
+          <div className={"modal-box p-3 gap-2"}>
+            <h3 className={"font-semibold text-lg"}>关于Deeproxy</h3>
+            <p className={"font-mono text-sm cursor-pointer hover:underline hover:text-primary"} onClick={() => {
+              aboutRef.current?.close();
+              openUrl("https://github.com/wrtx-dev/deeproxy");
+            }}>
               github.com/wrtx-dev/deeproxy
-            </a>
+            </p>
             <div className={"modal-action"}>
               <form method={"dialog"}>
                 <button>关闭</button>
