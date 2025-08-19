@@ -84,7 +84,7 @@ pub fn run() {
                         let win = app.app_handle().get_webview_window("main").unwrap();
                         if let Ok(flag) = win.is_visible() {
                             if flag {
-                                if (win.is_focused().unwrap()) {
+                                if win.is_focused().unwrap() {
                                     win.hide().unwrap();
                                 } else {
                                     win.set_focus().unwrap();
@@ -128,6 +128,7 @@ pub fn run() {
                 .title("deeproxy")
                 .resizable(false)
                 .visible(false)
+                .minimizable(false)
                 .inner_size(400.0, 375.0);
             #[cfg(target_os = "macos")]
             let win_builder = win_builder.hidden_title(true);
@@ -137,7 +138,7 @@ pub fn run() {
             {
                 let disable_context_menu_script = r#"
                     document.addEventListener('contextmenu', function(e) {
-                        e.preventDefault(); // 阻止默认的右键菜单
+                        e.preventDefault(); 
                     });
                 "#;
                 _window.eval(disable_context_menu_script).unwrap();
