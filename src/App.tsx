@@ -248,7 +248,7 @@ function App() {
           </div>
         </div>
       </div>
-      <div className={"inline-flex w-full flex-row-reverse items-center justify-start p-1 gap-2"}>
+      <div className={"inline-flex w-full flex-1 flex-row-reverse items-center justify-start p-1 gap-2"}>
         <button
           className={"btn btn-xs btn-error select-none cursor-default text-white"}
           onClick={() => {
