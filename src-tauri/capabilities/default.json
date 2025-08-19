@@ -17,6 +17,7 @@
           "url": "https://github.com/wrtx-dev/deeproxy"
         }
       ]
-    }
+    },
+    "core:app:allow-default-window-icon"
   ]
 }

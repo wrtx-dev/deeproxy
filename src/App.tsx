@@ -5,6 +5,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { Store } from "@tauri-apps/plugin-store";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { TrayIcon } from "@tauri-apps/api/tray";
+import { Menu } from "@tauri-apps/api/menu";
+import { defaultWindowIcon } from "@tauri-apps/api/app";
+import { menu } from "@tauri-apps/api";
 
 function isValidIpAddress(ip: string): boolean {
   const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
@@ -42,6 +46,159 @@ function App() {
   const [model, setModel] = useState<string>("");
   const [skills, setSkills] = useState<string[]>([]);
   const [connectStatus, setConnectStatus] = useState<ConnectStatus>("disconnected");
+  const trayRef = useRef<TrayIcon>(null);
+  const menuRef = useRef<Menu>(null);
+  useEffect(() => {
+    if (trayRef && !trayRef.current) {
+      (async () => {
+        menuRef.current = await Menu.new(
+          {
+            items: [
+              {
+                id: "setup",
+                text: "设置",
+                action: async () => {
+                  invoke("tray_show_setup");
+                }
+              },
+              {
+                id: "startup",
+                text: "启动",
+                action: async () => {
+                  invoke("tray_start_server");
+                }
+              },
+              {
+                id: "exit",
+                text: "退出",
+                action: async () => {
+                  invoke("tray_quit");
+                }
+              }
+            ]
+          }
+        );
+
+        trayRef.current = await TrayIcon.new({
+          icon: await defaultWindowIcon() ?? undefined,
+          menu: menuRef.current,
+          showMenuOnLeftClick: false,
+          action: (event) => {
+            switch (event.type) {
+              case "Click":
+                if (event.buttonState === "Up") {
+                  invoke("tray_show_setup");
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        });
+        console.log("create tray icon")
+      })();
+    }
+    return () => {
+      if (trayRef && trayRef.current) {
+        (async () => {
+          await trayRef.current!.close();
+          console.log("destroy tray icon")
+          if (menuRef && menuRef.current) {
+            menuRef.current.close();
+            console.log("destroy menu")
+          }
+        })();
+      }
+    }
+  }, []);
+  useEffect(() => {
+    let oldMenu: Menu | null = null;
+    if (menuRef && menuRef.current) {
+      oldMenu = menuRef.current;
+    }
+    if (trayRef && trayRef.current) {
+      if (connectStatus === "disconnected") {
+        (async () => {
+          menuRef.current = await Menu.new(
+            {
+              items: [
+                {
+                  id: "setup",
+                  text: "设置",
+                  action: async () => {
+                    invoke("tray_show_setup");
+                  }
+                },
+                {
+                  id: "startup",
+                  text: "启动",
+                  action: async () => {
+                    invoke("tray_start_server");
+                  }
+                },
+                {
+                  id: "exit",
+                  text: "退出",
+                  action: async () => {
+                    invoke("tray_quit");
+                  }
+                }
+              ]
+            }
+          );
+          if (trayRef && trayRef.current) {
+            trayRef.current.setMenu(menuRef.current);
+            if (oldMenu) {
+              oldMenu.close();
+            }
+          }
+        })();
+      } else {
+        (async () => {
+          menuRef.current = await Menu.new(
+            {
+              items: [
+                {
+                  id: "setup",
+                  text: "设置",
+                  action: async () => {
+                    invoke("tray_show_setup");
+                  }
+                },
+                {
+                  id: "restart",
+                  text: "重启",
+                  action: async () => {
+                    invoke("tray_restart_server");
+                  }
+                },
+                {
+                  id: "stop",
+                  text: "停止",
+                  action: async () => {
+                    invoke("tray_stop_server");
+                  }
+                },
+                {
+                  id: "exit",
+                  text: "退出",
+                  action: async () => {
+                    invoke("tray_quit");
+                  }
+                }
+              ]
+            }
+          );
+          if (trayRef && trayRef.current) {
+            trayRef.current.setMenu(menuRef.current);
+            if (oldMenu) {
+              oldMenu.close();
+            }
+          }
+        })();
+      }
+    }
+  }, [connectStatus])
 
   useEffect(() => {
     (async () => {
@@ -192,7 +349,7 @@ function App() {
         <div className={"w-full grid grid-cols-8 items-center p-1 gap-1"}>
           <span className="label col-span-2 select-none cursor-default">模型能力:</span>
           <div className={"col-span-6 flex flex-row gap-2 p-1 join "}>
-            <label className={"label text-black font-mono text-xs select-none cursor-default"}>
+            <label className={"label font-mono text-xs select-none cursor-default"}>
               <input
                 type="checkbox"
                 className={"checkbox-sm"}
@@ -210,7 +367,7 @@ function App() {
               />
               tools
             </label>
-            <label className={"label text-black font-mono text-xs"}>
+            <label className={"label font-mono text-xs"}>
               <input
                 type="checkbox"
                 className={"checkbox-sm select-none cursor-default"}
@@ -228,7 +385,7 @@ function App() {
               />
               vision
             </label>
-            <label className={"label text-black font-mono text-xs select-none cursor-default"}>
+            <label className={"label font-mono text-xs select-none cursor-default"}>
               <input
                 type="checkbox"
                 className={"checkbox-sm"}
@@ -317,7 +474,7 @@ function App() {
           {connectStatus === "disconnected" ? "未启动" : connectStatus === "connecting" ? "启动中" : "已启动"}
         </div>
         <dialog className={"modal"} ref={aboutRef}>
-          <div className={"modal-box p-3 gap-2"}>
+          <div className={"modal-box p-3 gap-2 overflow-hidden"}>
             <h3 className={"font-semibold text-lg"}>关于Deeproxy</h3>
             <p className={"font-mono text-sm cursor-pointer hover:underline hover:text-primary"} onClick={() => {
               aboutRef.current?.close();

@@ -1,11 +1,10 @@
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::menu::{Menu, MenuItem};
 use tokio::sync::Mutex;
 
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 mod proxy;
+mod tray;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -34,6 +33,11 @@ pub fn run() {
             is_running,
             proxy::stop,
             proxy::restart,
+            tray::tray_quit,
+            tray::tray_start_server,
+            tray::tray_stop_server,
+            tray::tray_restart_server,
+            tray::tray_show_setup,
         ])
         .manage(Arc::new(Mutex::new(None)) as proxy::SharedServerState)
         .on_window_event(|window, event| {
@@ -43,85 +47,6 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-            let stop_item = MenuItem::with_id(app, "stop", "停止", true, None::<&str>)?;
-            let start_item = MenuItem::with_id(app, "start", "启动", true, None::<&str>)?;
-            let main_item = MenuItem::with_id(app, "main", "设置", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&main_item, &start_item, &stop_item, &quit_item])?;
-            let _tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    "quit" => {
-                        println!("quit menu item was clicked");
-                        let napp = app.app_handle().clone();
-                        tauri::async_runtime::spawn(async move {
-                            let app = napp.clone();
-                            proxy::stop_server(napp).await.unwrap();
-                            app.exit(0);
-                        });
-                    }
-                    "stop" => {
-                        let napp = app.app_handle().clone();
-                        tauri::async_runtime::spawn(async move {
-                            proxy::stop_server(napp.app_handle().clone()).await.unwrap();
-                        });
-
-                        println!("stop menu item was clicked")
-                    }
-                    "start" => {
-                        let napp = app.app_handle().clone();
-                        // 使用应用的async_runtime而不是创建新runtime
-                        tauri::async_runtime::spawn(async move {
-                            if let Err(e) = proxy::start_api_server(napp.app_handle().clone()).await
-                            {
-                                eprintln!("Failed to start server: {}", e);
-                            }
-                        });
-                    }
-                    "main" => {
-                        let win = app.app_handle().get_webview_window("main").unwrap();
-                        if let Ok(flag) = win.is_visible() {
-                            if flag {
-                                if win.is_focused().unwrap() {
-                                    win.hide().unwrap();
-                                } else {
-                                    win.set_focus().unwrap();
-                                }
-                            } else {
-                                println!("show main window");
-                                win.show().expect("failed to show window");
-                                let _ = win.set_focus().expect("failed to set focus");
-                            }
-                        }
-                    }
-                    _ => {
-                        println!("menu item {:?} not handled", event.id());
-                    }
-                })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } => {
-                        let handle = tray.app_handle();
-                        let win = handle.get_webview_window("main").unwrap();
-                        if win.is_visible().unwrap() {
-                            if win.is_focused().unwrap() {
-                                win.hide().unwrap();
-                            } else {
-                                win.set_focus().unwrap();
-                            }
-                        } else {
-                            win.show().expect("failed to show window");
-                            let _ = win.set_focus().expect("failed to set focus");
-                        }
-                    }
-                    _ => {}
-                })
-                .build(app)?;
             #[cfg(target_os = "macos")]
             macos::set_activation_policy(macos::ActivationPolicy::Accessory);
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
@@ -129,6 +54,7 @@ pub fn run() {
                 .resizable(false)
                 .visible(false)
                 .minimizable(false)
+                .maximizable(false)
                 .inner_size(400.0, 375.0);
             #[cfg(target_os = "macos")]
             let win_builder = win_builder.hidden_title(true);
