@@ -35,7 +35,7 @@ type ConnectStatus = "disconnected" | "connecting" | "connected";
 function App() {
   const [port, setPort] = useState(11434);
   const [addr, setAddr] = useState("localhost");
-  const [apiAddr, setApiAddr] = useState("https://api.deepseek.com");
+  const [apiAddr, setApiAddr] = useState("https://api.deepseek.com/v1");
   const [apikey, setApikey] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [model, setModel] = useState<string>("");
@@ -49,7 +49,7 @@ function App() {
       setAddr(config.addr || "localhost");
       setPort(config.port || 11434);
       setApikey(config.apikey || "");
-      setApiAddr(config.api_addr || "https://api.deepseek.com");
+      setApiAddr(config.api_addr || "https://api.deepseek.com/v1");
       setModel(config.model || "");
       setSkills(config.skills || []);
     })();
@@ -66,7 +66,7 @@ function App() {
       const query = async () => {
         if (apiAddr && apiAddr.length > 0 && apikey.length > 0) {
           try {
-            const res = await fetch(`${apiAddr}/v1/models`, {
+            const res = await fetch(`${apiAddr}/models`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -279,7 +279,10 @@ function App() {
           {`保存并${connectStatus === "disconnected" ? "启动" : "重启"}`}
         </button>
         <div className={"flex-1 flex h-full flex-row justify-start items-center  gap-2 text-xs select-none cursor-default"}>
-          <span className={`status ${connectStatus === "disconnected" ? "status-secondary" : connectStatus === "connecting" ? "status-warning animate-ping" : "status-success animate-spin"}`} />
+          <div class="inline-grid *:[grid-area:1/1]">
+            <div className={`status ${connectStatus === "disconnected" ? "status-secondary animate-none" : connectStatus === "connecting" ? "status-warning animate-ping" : "status-success animate-ping"}`}></div>
+            <div className={`status ${connectStatus === "disconnected" ? "status-secondary" : connectStatus === "connecting" ? "status-warning" : "status-success"}`}></div>
+          </div>
           {connectStatus === "disconnected" ? "未启动" : connectStatus === "connecting" ? "启动中" : "已启动"}
         </div>
       </div>

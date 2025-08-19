@@ -160,8 +160,12 @@ async fn post_chat_completions(
         "Authorization",
         HeaderValue::from_str(format!("Bearer {}", ctx.conf.apikey).as_str()).unwrap(),
     );
-    let dst_uri =
-        Uri::try_from(format!("{}/v1/chat/completions", ctx.conf.api_addr.clone())).unwrap();
+    let mut url = ctx.conf.api_addr.clone();
+    if url.ends_with("/") {
+        url.pop();
+    }
+
+    let dst_uri = Uri::try_from(format!("{}/chat/completions", url)).unwrap();
     println!("dst host:{}", dst_uri.host().unwrap());
     req.headers_mut().remove("Host");
     req.headers_mut().append(

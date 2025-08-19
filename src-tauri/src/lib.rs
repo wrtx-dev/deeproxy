@@ -129,6 +129,15 @@ pub fn run() {
             let win_builder = win_builder.hidden_title(true);
 
             let _window = win_builder.build().unwrap();
+            #[cfg(not(debug_assertions))]
+            {
+                let disable_context_menu_script = r#"
+                    document.addEventListener('contextmenu', function(e) {
+                        e.preventDefault(); // 阻止默认的右键菜单
+                    });
+                "#;
+                _window.eval(disable_context_menu_script).unwrap();
+            }
             let napp = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(2)).await;
