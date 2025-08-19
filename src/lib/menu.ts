@@ -78,7 +78,7 @@ export const createTray = async (menu?: Menu) => {
         action: (event) => {
             switch (event.type) {
                 case "Click":
-                    if (event.buttonState === "Up") {
+                    if (event.buttonState === "Up" && event.button === "Left") {
                         invoke("tray_show_setup");
                     }
                     break;
