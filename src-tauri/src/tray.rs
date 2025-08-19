@@ -38,11 +38,16 @@ pub async fn tray_restart_server(handle: tauri::AppHandle) {
 pub async fn tray_show_setup(handle: tauri::AppHandle) {
     let win = handle.get_webview_window("main").unwrap();
     if win.is_visible().unwrap() {
-        if win.is_focused().unwrap() {
-            win.hide().unwrap();
-        } else {
-            win.set_focus().unwrap();
+        #[cfg(target_os = "macos")]
+        {
+            if win.is_focused().unwrap() {
+                win.hide().unwrap();
+            } else {
+                win.set_focus().unwrap();
+            }
         }
+        #[cfg(not(target_os = "macos"))]
+        win.hide().unwrap();
     } else {
         win.show().expect("failed to show window");
         let _ = win.set_focus().expect("failed to set focus");
