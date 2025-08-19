@@ -7,22 +7,10 @@ import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { TrayIcon } from "@tauri-apps/api/tray";
 import { Menu } from "@tauri-apps/api/menu";
-import { defaultWindowIcon } from "@tauri-apps/api/app";
+import { createStartMenu, createStopMenu, createTray } from "./lib/menu";
+import { isValidIpAddress } from "./lib/utils";
 
-function isValidIpAddress(ip: string): boolean {
-  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
-  const ipv6Regex = /^((([0-9a-fA-F]{1,4}:){7}([0-9a-fA-F]{1,4}|:))|(([0-9a-fA-F]{1,4}:){6}(:[0-9a-fA-F]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-fA-F]{1,4}:){5}(((:[0-9a-fA-F]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9a-fA-F]{1,4}:){4}(((:[0-9a-fA-F]{1,4}){1,3})|((:[0-9a-fA-F]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-fA-F]{1,4}:){3}(((:[0-9a-fA-F]{1,4}){1,4})|((:[0-9a-fA-F]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-fA-F]{1,4}:){2}(((:[0-9a-fA-F]{1,4}){1,5})|((:[0-9a-fA-F]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9a-fA-F]{1,4}:){1}(((:[0-9a-fA-F]{1,4}){1,6})|((:[0-9a-fA-F]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9a-fA-F]{1,4}){1,7})|((:[0-9a-fA-F]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?$/i;
 
-  if (ipv4Regex.test(ip)) {
-    return true;
-  }
-
-  if (ipv6Regex.test(ip)) {
-    return true;
-  }
-
-  return ip === "localhost";
-}
 type Config = {
   addr: string;
   port: number;
@@ -50,50 +38,9 @@ function App() {
   useEffect(() => {
     if (trayRef && !trayRef.current) {
       (async () => {
-        menuRef.current = await Menu.new(
-          {
-            items: [
-              {
-                id: "setup",
-                text: "设置",
-                action: async () => {
-                  invoke("tray_show_setup");
-                }
-              },
-              {
-                id: "startup",
-                text: "启动",
-                action: async () => {
-                  invoke("tray_start_server");
-                }
-              },
-              {
-                id: "exit",
-                text: "退出",
-                action: async () => {
-                  invoke("tray_quit");
-                }
-              }
-            ]
-          }
-        );
+        menuRef.current = await createStartMenu();
 
-        trayRef.current = await TrayIcon.new({
-          icon: await defaultWindowIcon() ?? undefined,
-          menu: menuRef.current,
-          showMenuOnLeftClick: false,
-          action: (event) => {
-            switch (event.type) {
-              case "Click":
-                if (event.buttonState === "Up") {
-                  invoke("tray_show_setup");
-                }
-                break;
-              default:
-                break;
-            }
-          }
-        });
+        trayRef.current = await createTray(menuRef.current);
         console.log("create tray icon")
       })();
     }
@@ -118,33 +65,7 @@ function App() {
     if (trayRef && trayRef.current) {
       if (connectStatus === "disconnected") {
         (async () => {
-          menuRef.current = await Menu.new(
-            {
-              items: [
-                {
-                  id: "setup",
-                  text: "设置",
-                  action: async () => {
-                    invoke("tray_show_setup");
-                  }
-                },
-                {
-                  id: "startup",
-                  text: "启动",
-                  action: async () => {
-                    invoke("tray_start_server");
-                  }
-                },
-                {
-                  id: "exit",
-                  text: "退出",
-                  action: async () => {
-                    invoke("tray_quit");
-                  }
-                }
-              ]
-            }
-          );
+          menuRef.current = await createStartMenu();
           if (trayRef && trayRef.current) {
             trayRef.current.setMenu(menuRef.current);
             if (oldMenu) {
@@ -154,40 +75,7 @@ function App() {
         })();
       } else {
         (async () => {
-          menuRef.current = await Menu.new(
-            {
-              items: [
-                {
-                  id: "setup",
-                  text: "设置",
-                  action: async () => {
-                    invoke("tray_show_setup");
-                  }
-                },
-                {
-                  id: "restart",
-                  text: "重启",
-                  action: async () => {
-                    invoke("tray_restart_server");
-                  }
-                },
-                {
-                  id: "stop",
-                  text: "停止",
-                  action: async () => {
-                    invoke("tray_stop_server");
-                  }
-                },
-                {
-                  id: "exit",
-                  text: "退出",
-                  action: async () => {
-                    invoke("tray_quit");
-                  }
-                }
-              ]
-            }
-          );
+          menuRef.current = await createStopMenu();
           if (trayRef && trayRef.current) {
             trayRef.current.setMenu(menuRef.current);
             if (oldMenu) {
