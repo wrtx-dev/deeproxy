@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { JSX } from "preact";
 import "./global.css";
 import { invoke } from '@tauri-apps/api/core';
@@ -61,6 +61,8 @@ function App() {
     })
   }, []);
 
+  const aboutRef = useRef<HTMLDialogElement>(null);
+
   useEffect(() => {
     if (apiAddr && apiAddr.length > 0 && apikey.length > 0) {
       const query = async () => {
@@ -101,7 +103,7 @@ function App() {
         <div className="hero-content text-center text-gray-100/80 select-none cursor-default rounded-sm">
           <div className="w-full">
             <h1 className="text-5xl font-semibold font-mono font-stretch-expanded text-white text-shadow-lg text-shadow-black/50">
-              DeeProxy
+              DEEPROXY
             </h1>
           </div>
         </div>
@@ -120,11 +122,13 @@ function App() {
                 setAddr(target.value)
               }
             }}
+            disabled={connectStatus !== "disconnected"}
           />
           <span className="label col-span-1 select-none cursor-default">端口:</span>
           <input
             type="number"
             value={port}
+            disabled={connectStatus !== "disconnected"}
             onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
               const target = e.target as HTMLInputElement;
               target && target.value && setPort(parseInt(target.value))
@@ -139,6 +143,7 @@ function App() {
             spellcheck={false}
             value={apikey}
             type={"password"}
+            disabled={connectStatus !== "disconnected"}
             onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
               const target = e.target as HTMLInputElement;
 
@@ -155,6 +160,7 @@ function App() {
             className="input input-xs col-span-6 focus-within:outline-0 p-1"
             spellcheck={false}
             value={apiAddr}
+            disabled={connectStatus !== "disconnected"}
             onInput={(e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
               const target = e.target as HTMLInputElement;
               setApiAddr(target.value)
@@ -170,7 +176,7 @@ function App() {
               setModel(target.value);
             }}
             value={model.length === 0 ? "chooseModel" : model}
-            disabled={models.length === 0}
+            disabled={models.length === 0 || connectStatus !== "disconnected"}
           >
             <option value="chooseModel" disabled>
               选择模型
@@ -190,6 +196,7 @@ function App() {
                 type="checkbox"
                 className={"checkbox-sm"}
                 checked={skills.includes("tools")}
+                disabled={connectStatus !== "disconnected"}
                 onChange={() => {
                   setSkills(prev => {
                     if (prev.includes("tools")) {
@@ -207,6 +214,7 @@ function App() {
                 type="checkbox"
                 className={"checkbox-sm select-none cursor-default"}
                 checked={skills.includes("vision")}
+                disabled={connectStatus !== "disconnected"}
                 onChange={() => {
                   setSkills(prev => {
                     if (prev.includes("vision")) {
@@ -224,6 +232,7 @@ function App() {
                 type="checkbox"
                 className={"checkbox-sm"}
                 checked={skills.includes("thinking")}
+                disabled={connectStatus !== "disconnected"}
                 onChange={() => {
                   setSkills(prev => {
                     if (prev.includes("thinking")) {
@@ -251,6 +260,21 @@ function App() {
           停止
         </button>
         <button
+          className={"btn btn-xs btn-success select-none cursor-default"}
+          onClick={() => {
+            (async () => {
+              if (connectStatus === "disconnected") {
+                invoke("start_server");
+              } else {
+                invoke("restart");
+              }
+            })();
+          }}
+          disabled={addr.length === 0 || port < 1 || port > 65535 || !isValidIpAddress(addr) || apiAddr.length === 0 || apikey.length === 0}
+        >
+          {`${connectStatus === "disconnected" ? "启动" : "重启"}`}
+        </button>
+        <button
           className={"btn btn-xs btn-primary select-none cursor-default"}
           onClick={() => {
             const config: Config = {
@@ -267,16 +291,21 @@ function App() {
               const store = await Store.load("config.json");
               await store.set("config", config);
               await store.save();
-              if (connectStatus === "disconnected") {
-                invoke("start_server");
-              } else {
-                invoke("restart");
-              }
             })();
           }}
-          disabled={addr.length === 0 || port < 1 || port > 65535 || !isValidIpAddress(addr) || apiAddr.length === 0 || apikey.length === 0}
+          disabled={addr.length === 0 || port < 1 || port > 65535 || !isValidIpAddress(addr) || apiAddr.length === 0 || apikey.length === 0 || connectStatus !== "disconnected"}
         >
-          {`保存并${connectStatus === "disconnected" ? "启动" : "重启"}`}
+          {`保存`}
+        </button>
+        <button
+          className={"btn btn-circle btn-xs"}
+          onClick={() => {
+            aboutRef.current?.showModal();
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info" viewBox="0 0 16 16">
+            <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
+          </svg>
         </button>
         <div className={"flex-1 flex h-full flex-row justify-start items-center  gap-2 text-xs select-none cursor-default"}>
           <div class="inline-grid *:[grid-area:1/1]">
@@ -285,6 +314,20 @@ function App() {
           </div>
           {connectStatus === "disconnected" ? "未启动" : connectStatus === "connecting" ? "启动中" : "已启动"}
         </div>
+        <dialog className={"modal"} ref={aboutRef}>
+          <div className={"modal-box p-3"}>
+            <h3 className={"font-semibold"}>关于Deeproxy</h3>
+            <a className={"font-mono text-xs"} href="https://github.com/wrtx-dev/deeproxy">
+              github.com/wrtx-dev/deeproxy
+            </a>
+            <div className={"modal-action"}>
+              <form method={"dialog"}>
+                <button>关闭</button>
+              </form>
+            </div>
+          </div>
+
+        </dialog>
       </div>
     </main>
   );

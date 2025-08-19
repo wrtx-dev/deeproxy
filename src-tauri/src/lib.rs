@@ -84,7 +84,11 @@ pub fn run() {
                         let win = app.app_handle().get_webview_window("main").unwrap();
                         if let Ok(flag) = win.is_visible() {
                             if flag {
-                                win.hide().unwrap();
+                                if (win.is_focused().unwrap()) {
+                                    win.hide().unwrap();
+                                } else {
+                                    win.set_focus().unwrap();
+                                }
                             } else {
                                 println!("show main window");
                                 win.show().expect("failed to show window");
